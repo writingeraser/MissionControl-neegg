@@ -16,9 +16,10 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::mitm::btm {
+namespace ams::mc {
 
-    void Launch();
-    void WaitFinished();
+    os::Event *GetProcessSwitchEvent();
+    ncm::ProgramId GetCurrentProgramId();
+    void CheckForProcessSwitch();
 
 }

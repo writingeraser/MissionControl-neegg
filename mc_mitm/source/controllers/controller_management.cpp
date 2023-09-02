@@ -23,7 +23,8 @@ namespace ams::controller {
 
         const std::string official_npad_names[] = {
             "NintendoGamepad",
-            "Joy-Con",
+            "Joy-Con (L)",
+            "Joy-Con (R)",
             "Pro Controller",
             "Lic Pro Controller",
             "NES Controller",
@@ -31,6 +32,7 @@ namespace ams::controller {
             "SNES Controller",
             "N64 Controller",
             "MD/Gen Control Pad",
+            "Lic2 Pro Controller",
         };
 
         constexpr auto cod_major_peripheral = 0x05;
@@ -45,6 +47,13 @@ namespace ams::controller {
 
     ControllerType Identify(const bluetooth::DevicesSettings *device) {
 
+        for (auto hwId : SwitchController::hardware_ids) {
+            if ( (device->vid == hwId.vid) && (device->pid == hwId.pid) ) {
+                return ControllerType_Switch;
+            }
+        }
+
+        // Additionally check controller name against known official Nintendo controllers, as some controllers (eg. JoyCons paired via rails) don't report the correct vid/pid
         if (IsOfficialSwitchControllerName(hos::GetVersion() < hos::Version_13_0_0 ? device->name.name : device->name2))
             return ControllerType_Switch;
 
@@ -180,6 +189,12 @@ namespace ams::controller {
             }
         }
 
+        for (auto hwId : BetopController::hardware_ids) {
+            if ( (device->vid == hwId.vid) && (device->pid == hwId.pid) ) {
+                return ControllerType_Betop;
+            }
+        }
+
         return ControllerType_Unknown;
     }
 
@@ -274,6 +289,9 @@ namespace ams::controller {
                 break;
             case ControllerType_Hyperkin:
                 controller = std::make_shared<HyperkinController>(address, id);
+                break;
+            case ControllerType_Betop:
+                controller = std::make_shared<BetopController>(address, id);
                 break;
             default:
                 controller = std::make_shared<UnknownController>(address, id);

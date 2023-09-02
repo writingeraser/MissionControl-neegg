@@ -43,7 +43,7 @@ namespace ams::controller {
     }
 
     Result LedsMaskToPlayerNumber(u8 led_mask, u8 *player_number) {
-        *player_number = led_player_mappings[led_mask & 0xf];
+        *player_number = led_player_mappings[(led_mask & 0xf) | (led_mask >> 4)];
         if (*player_number == SwitchPlayerNumber_Unknown) {
             return -1;
         }
@@ -79,8 +79,8 @@ namespace ams::controller {
         }
 
         if (!m_future_responses.empty()) {
-            if ((m_future_responses.back()->GetType() == BtdrvHidEventType_Data) && (m_future_responses.back()->GetUserData() == report->data[0])) {
-                m_future_responses.back()->SetData(*event_info);
+            if ((m_future_responses.front()->GetType() == BtdrvHidEventType_Data) && (m_future_responses.front()->GetUserData() == report->data[0])) {
+                m_future_responses.front()->SetData(*event_info);
             }
         }
 
@@ -107,8 +107,8 @@ namespace ams::controller {
 
     Result SwitchController::HandleSetReportEvent(const bluetooth::HidReportEventInfo *event_info) {
         if (!m_future_responses.empty()) {
-            if (m_future_responses.back()->GetType() == BtdrvHidEventType_SetReport) {
-                m_future_responses.back()->SetData(*event_info);
+            if (m_future_responses.front()->GetType() == BtdrvHidEventType_SetReport) {
+                m_future_responses.front()->SetData(*event_info);
             }
 
             R_SUCCEED();
@@ -119,8 +119,8 @@ namespace ams::controller {
 
     Result SwitchController::HandleGetReportEvent(const bluetooth::HidReportEventInfo *event_info) {
         if (!m_future_responses.empty()) {
-            if (m_future_responses.back()->GetType() == BtdrvHidEventType_GetReport) {
-                m_future_responses.back()->SetData(*event_info);
+            if (m_future_responses.front()->GetType() == BtdrvHidEventType_GetReport) {
+                m_future_responses.front()->SetData(*event_info);
             }
 
             R_SUCCEED();

@@ -26,6 +26,9 @@ namespace ams::controller {
         constexpr float accel_scale_factor = 65535 / 16000.0f * 1000;
         constexpr float gyro_scale_factor = 65535 / (13371 * 360.0f) * 1000;
 
+        constexpr u16 touchpad_width = 1920;
+        constexpr u16 touchpad_height = 1080;
+
         const u8 player_led_flags[] = {
             // Mimic the Switch's player LEDs
             0x01,
@@ -152,6 +155,9 @@ namespace ams::controller {
         );
 
         this->MapButtons(&src->input0x01.buttons);
+
+        m_buttons.ZR = src->input0x01.right_trigger > (m_trigger_threshold * UINT8_MAX);
+        m_buttons.ZL = src->input0x01.left_trigger  > (m_trigger_threshold * UINT8_MAX);
     }
 
     void DualsenseController::MapInputReport0x31(const DualsenseReportData *src) {
@@ -183,6 +189,28 @@ namespace ams::controller {
         );
 
         this->MapButtons(&src->input0x31.buttons);
+
+        m_buttons.ZR = src->input0x31.right_trigger > (m_trigger_threshold * UINT8_MAX);
+        m_buttons.ZL = src->input0x31.left_trigger  > (m_trigger_threshold * UINT8_MAX);
+
+        if (src->input0x31.buttons.touchpad) {
+            for (int i = 0; i < 2; ++i) {
+                const DualsenseTouchpadPoint *point = &src->input0x31.touch_points[i];
+
+                bool active = point->contact & BIT(7) ? false : true;;
+                if (active) {
+                    u16 x = (point->x_hi << 8) | point->x_lo;
+
+                    if (x < (0.15 * touchpad_width)) {
+                        m_buttons.minus = 1;
+                    } else if (x > (0.85 * touchpad_width)) {
+                        m_buttons.plus = 1;
+                    } else {
+                        m_buttons.capture = 1;
+                    }
+                }
+            }
+        }
 
         if (m_enable_motion) {
             s16 acc_x = -static_cast<s16>(accel_scale_factor * src->input0x31.acc_z / float(m_motion_calibration.acc.z_max));
@@ -238,9 +266,7 @@ namespace ams::controller {
         m_buttons.Y = buttons->square;
 
         m_buttons.R  = buttons->R1;
-        m_buttons.ZR = buttons->R2;
         m_buttons.L  = buttons->L1;
-        m_buttons.ZL = buttons->L2;
 
         m_buttons.minus = buttons->share;
         m_buttons.plus  = buttons->options;
@@ -248,7 +274,7 @@ namespace ams::controller {
         m_buttons.lstick_press = buttons->L3;
         m_buttons.rstick_press = buttons->R3;
 
-        m_buttons.capture = buttons->tpad;
+        m_buttons.capture = buttons->mute;
         m_buttons.home    = buttons->ps;
     }
 
